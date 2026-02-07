@@ -1,0 +1,14 @@
+websockets>=11.0.3
+psutil>=5.9.0
+
+Como usar:
+
+Salve como index.html
+
+Execute o backend Python (python backend.py)
+
+Abra o index.html no navegador
+
+Digite um domínio ou use os botões sugeridos
+
+Clique em Monitorar

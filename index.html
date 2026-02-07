@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Site - Ferramenta de Pentest</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .pulse-animation {
+            animation: pulse 0.3s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        input:disabled, button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status-active { color: #10B981; }
+        .status-inactive { color: #EF4444; }
+        .status-monitoring { color: #3B82F6; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-6 min-h-screen">
+    
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-green-400">
+            <i class="fas fa-shield-alt mr-3"></i>Monitor de Site - Pentest
+        </h1>
+        <p class="text-gray-400 mt-2">
+            Ferramenta para monitoramento de tráfego específico durante testes de segurança
+        </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Painel Principal -->
+        <div class="lg:col-span-2">
+            
+            <!-- ========== MONITOR DE SITE ESPECÍFICO ========== -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+                <h2 class="font-bold text-xl mb-4 flex items-center">
+                    <i class="fas fa-search mr-3 text-blue-400"></i> Monitorar Site Específico
+                </h2>
+                
+                <div class="mb-6">
+                    <div class="flex flex-col md:flex-row gap-3 mb-4">
+                        <div class="flex-1">
+                            <input 
+                                type="url" 
+                                id="siteUrl" 
+                                placeholder="https://exemplo.com ou exemplo.com"
+                                class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-600"
+                            >
+                            <p class="text-sm text-gray-500 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Deixe vazio para monitorar toda a rede
+                            </p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button 
+                                onclick="startSiteMonitoring()"
+                                id="startSiteBtn"
+                                class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium flex items-center transition"
+                            >
+                                <i class="fas fa-play mr-2"></i>Monitorar
+                            </button>
+                            <button 
+                                onclick="stopSiteMonitoring()"
+                                id="stopSiteBtn"
+                                class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-medium flex items-center transition"
+                                disabled
+                            >
+                                <i class="fas fa-stop mr-2"></i>Parar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-400 mb-4 p-3 bg-gray-900 rounded">
+                        <i class="fas fa-satellite-dish mr-2"></i>
+                        <strong>Monitorando:</strong> 
+                        <span id="currentSite" class="ml-2 text-green-300 font-medium">Nenhum site</span>
+                    </div>
+                </div>
+                
+                <!-- Estatísticas do Site -->
+                <h3 class="font-medium mb-4 text-gray-300">
+                    <i class="fas fa-chart-bar mr-2"></i>Métricas em Tempo Real
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-900 rounded-lg p-4 flex flex-col items-center justify-center border border-gray-700 hover:border-green-500 transition">
+                        <div class="flex items-center">
+                            <i class="fas fa-tachometer-alt text-green-400 mr-3 text-2xl"></i>
+                            <div>
+                                <span id="siteBandwidth" class="text-3xl font-bold text-green-400">0.0</span>
+                                <span class="text-sm text-gray-400 ml-1">MB/s</span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2" id="bwTrend">-</div>
+                        <div class="text-xs text-gray-600 mt-1">Largura de Banda</div>
+                    </div>
+                    
+                    <div class="bg-gray-900 rounded-lg p-4 flex flex-col items-center justify-center border border-gray-700 hover:border-blue-500 transition">
+                        <div class="flex items-center">
+                            <i class="fas fa-network-wired text-blue-400 mr-3 text-2xl"></i>
+                            <div>
+                                <span id="sitePackets" class="text-3xl font-bold text-blue-400">0</span>
+                                <span class="text-sm text-gray-400 ml-1">Pacotes/s</span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2" id="pktTrend">-</div>
+                        <div class="text-xs text-gray-600 mt-1">Pacotes por Segundo</div>
+                    </div>
+                    
+                    <div class="bg-gray-900 rounded-lg p-4 flex flex-col items-center justify-center border border-gray-700 hover:border-purple-500 transition">
+                        <div class="flex items-center">
+                            <i class="fas fa-percentage text-purple-400 mr-3 text-2xl"></i>
+                            <div>
+                                <span id="siteEfficiency" class="text-3xl font-bold text-purple-400">0%</span>
+                                <span class="text-sm text-gray-400 ml-1">Eficiência</span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2" id="effTrend">-</div>
+                        <div class="text-xs text-gray-600 mt-1">Eficiência de Tráfego</div>
+                    </div>
+                </div>
+                
+                <!-- Detalhes do Tráfego -->
+                <h3 class="font-medium mb-4 text-gray-300">
+                    <i class="fas fa-info-circle mr-2"></i>Informações do Monitoramento
+                </h3>
+                <div class="bg-gray-900 p-4 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-gray-800 rounded">
+                            <div class="text-gray-400 text-sm">
+                                <i class="fas fa-globe mr-2"></i>Domínio/Alvo
+                            </div>
+                            <div id="siteDomain" class="text-lg font-medium mt-1">-</div>
+                        </div>
+                        <div class="p-3 bg-gray-800 rounded">
+                            <div class="text-gray-400 text-sm">
+                                <i class="fas fa-power-off mr-2"></i>Status
+                            </div>
+                            <div id="siteStatus" class="text-lg font-medium mt-1 status-inactive">
+                                <i class="fas fa-circle mr-2"></i>Inativo
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ========== SITES MAIS ACESSADOS ========== -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 mt-6">
+                <h3 class="font-medium mb-4 text-lg">
+                    <i class="fas fa-bolt mr-2 text-yellow-400"></i>Sites Sugeridos para Teste
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="monitorSite('https://google.com')" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg flex items-center transition">
+                        <i class="fab fa-google mr-2"></i>Google
+                    </button>
+                    <button onclick="monitorSite('https://youtube.com')" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg flex items-center transition">
+                        <i class="fab fa-youtube mr-2 text-red-500"></i>YouTube
+                    </button>
+                    <button onclick="monitorSite('https://github.com')" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg flex items-center transition">
+                        <i class="fab fa-github mr-2"></i>GitHub
+                    </button>
+                    <button onclick="monitorSite('https://businesscorp.com.br')" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg flex items-center transition">
+                        <i class="fas fa-building mr-2"></i>BusinessCorp
+                    </button>
+                    <button onclick="monitorSite('')" class="bg-blue-700 hover:bg-blue-600 px-4 py-3 rounded-lg flex items-center transition">
+                        <i class="fas fa-list mr-2"></i>Todos os Sites
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">
+                    <i class="fas fa-lightbulb mr-2"></i>
+                    Clique em qualquer site para iniciar o monitoramento automaticamente
+                </p>
+            </div>
+        </div>
+        
+        <!-- Painel Lateral -->
+        <div class="lg:col-span-1">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+                <h3 class="font-bold text-lg mb-4">
+                    <i class="fas fa-cogs mr-2 text-purple-400"></i>Configurações
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">
+                            <i class="fas fa-server mr-2"></i>Servidor WebSocket
+                        </label>
+                        <input type="text" id="wsServer" value="ws://localhost:8765" 
+                               class="w-full bg-gray-700 text-white px-4 py-2 rounded border border-gray-600">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">
+                            <i class="fas fa-clock mr-2"></i>Intervalo de Atualização
+                        </label>
+                        <select id="updateInterval" class="w-full bg-gray-700 text-white px-4 py-2 rounded border border-gray-600">
+                            <option value="1000">1 segundo</option>
+                            <option value="2000">2 segundos</option>
+                            <option value="5000">5 segundos</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="testConnection()" class="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-medium">
+                        <i class="fas fa-plug mr-2"></i>Testar Conexão
+                    </button>
+                    
+                    <div class="pt-4 border-t border-gray-700">
+                        <h4 class="font-medium mb-3">
+                            <i class="fas fa-history mr-2"></i>Log de Atividades
+                        </h4>
+                        <div id="activityLog" class="bg-gray-900 p-3 rounded h-48 overflow-y-auto text-sm">
+                            <div class="text-gray-500">Log inicializado...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 mt-6">
+                <h3 class="font-bold text-lg mb-4">
+                    <i class="fas fa-graduation-cap mr-2 text-green-400"></i>Uso em Pentest
+                </h3>
+                <ul class="space-y-3 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-400 mr-2 mt-1"></i>
+                        <span>Monitora tráfego específico durante testes</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-400 mr-2 mt-1"></i>
+                        <span>Detecta anomalias e picos de tráfego</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-400 mr-2 mt-1"></i>
+                        <span>Mede impacto de ataques DoS/DDoS</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-400 mr-2 mt-1"></i>
+                        <span>Analisa eficiência de explorações</span>
+                    </li>
+                </ul>
+                
+                <div class="mt-6 p-3 bg-gray-900 rounded text-xs text-gray-400">
+                    <i class="fas fa-exclamation-triangle mr-2 text-yellow-400"></i>
+                    Use apenas em ambientes autorizados para testes de segurança.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="mt-8 pt-6 border-t border-gray-800 text-center text-gray-500 text-sm">
+        <p>
+            <i class="fas fa-code mr-2"></i>
+            Monitor de Site para Pentest | 
+            <a href="https://github.com/seu-usuario/monitor-pentest" class="text-blue-400 hover:underline">
+                <i class="fab fa-github mr-1"></i>GitHub
+            </a>
+        </p>
+        <p class="mt-2">© 2026 MISS S3C - All Rights Reserved.</p>
+    </footer>
+
+    <script>
+    // ========== SISTEMA DE MONITORAMENTO DE SITE ==========
+    class SiteMonitor {
+        constructor() {
+            this.ws = null;
+            this.isMonitoring = false;
+            this.currentDomain = '';
+            this.previousData = null;
+            this.updateInterval = 1000;
+            this.activityLog = [];
+            this.connect();
+        }
+        
+        connect() {
+            const server = document.getElementById('wsServer').value;
+            
+            try {
+                this.ws = new WebSocket(server);
+                this.logActivity('🔗 Conectando ao servidor...', 'info');
+                
+                this.ws.onopen = () => {
+                    this.logActivity('✅ Conectado ao monitor de sites', 'success');
+                    this.updateStatus('Conectado', 'green');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.updateSiteData(data);
+                        this.logActivity(`📊 Dados recebidos: ${data.bandwidth} MB/s`, 'data');
+                    } catch (e) {
+                        console.error('Erro ao processar dados:', e);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    this.logActivity('🔌 Conexão perdida, reconectando...', 'warning');
+                    this.updateStatus('Desconectado', 'red');
+                    setTimeout(() => this.connect(), 3000);
+                };
+                
+                this.ws.onerror = (error) => {
+                    this.logActivity(`❌ Erro na conexão: ${error.message}`, 'error');
+                    this.updateStatus('Erro de conexão', 'red');
+                };
+                
+            } catch (error) {
+                this.logActivity(`❌ Falha na conexão: ${error}`, 'error');
+            }
+        }
+        
+        startMonitoring(domain) {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                this.logActivity('⚠️ Aguardando conexão com servidor...', 'warning');
+                alert('Aguardando conexão com o servidor...');
+                return;
+            }
+            
+            this.currentDomain = domain || '';
+            const displayDomain = domain || 'Todos os sites';
+            
+            // Atualiza UI
+            document.getElementById('currentSite').textContent = displayDomain;
+            document.getElementById('siteDomain').textContent = domain || 'Monitorando toda rede';
+            
+            // Envia comando para iniciar captura
+            this.ws.send(JSON.stringify({
+                action: 'start_capture',
+                domain: domain,
+                interval: this.updateInterval
+            }));
+            
+            this.isMonitoring = true;
+            this.updateStatus('Monitorando', 'green');
+            this.logActivity(`🎯 Iniciando monitoramento: ${displayDomain}`, 'success');
+            
+            // Ativa/desativa botões
+            document.getElementById('startSiteBtn').disabled = true;
+            document.getElementById('stopSiteBtn').disabled = false;
+        }
+        
+        stopMonitoring() {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ action: 'stop_capture' }));
+                this.logActivity('⏹️ Monitoramento parado', 'info');
+            }
+            
+            this.isMonitoring = false;
+            this.updateStatus('Parado', 'yellow');
+            
+            // Ativa/desativa botões
+            document.getElementById('startSiteBtn').disabled = false;
+            document.getElementById('stopSiteBtn').disabled = true;
+            
+            // Reseta dados
+            document.getElementById('siteBandwidth').textContent = '0.0';
+            document.getElementById('sitePackets').textContent = '0';
+            document.getElementById('siteEfficiency').textContent = '0%';
+            
+            // Limpa tendências
+            ['bwTrend', 'pktTrend', 'effTrend'].forEach(id => {
+                document.getElementById(id).textContent = '-';
+            });
+        }
+        
+        updateSiteData(data) {
+            // Atualiza os valores principais
+            document.getElementById('siteBandwidth').textContent = data.bandwidth;
+            document.getElementById('sitePackets').textContent = data.packets;
+            document.getElementById('siteEfficiency').textContent = `${data.efficiency}%`;
+            
+            // Atualiza tendências
+            if (this.previousData) {
+                this.updateTrend('bwTrend', data.bandwidth, this.previousData.bandwidth, 'MB/s');
+                this.updateTrend('pktTrend', parseInt(data.packets.replace(/,/g, '')), 
+                                parseInt(this.previousData.packets.replace(/,/g, '')), 'pkt/s');
+                this.updateTrend('effTrend', data.efficiency, this.previousData.efficiency, '%');
+            }
+            
+            this.previousData = data;
+            
+            // Anima a atualização
+            this.animateUpdate();
+        }
+        
+        updateTrend(elementId, current, previous, unit) {
+            const element = document.getElementById(elementId);
+            if (!element || previous === 0) return;
+            
+            const change = ((current - previous) / previous * 100).toFixed(1);
+            
+            if (Math.abs(change) < 1) {
+                element.textContent = '→ Estável';
+                element.className = 'text-sm text-gray-500 mt-2';
+            } else if (change > 0) {
+                element.textContent = `↗ ${change}%`;
+                element.className = 'text-sm text-green-500 mt-2';
+            } else {
+                element.textContent = `↘ ${Math.abs(change)}%`;
+                element.className = 'text-sm text-red-500 mt-2';
+            }
+        }
+        
+        updateStatus(message, color) {
+            const statusEl = document.getElementById('siteStatus');
+            const icon = color === 'green' ? 'fa-play' : 
+                        color === 'red' ? 'fa-times' : 'fa-pause';
+            
+            statusEl.innerHTML = `<i class="fas ${icon} mr-2"></i>${message}`;
+            statusEl.className = `text-lg font-medium mt-1 status-${color}`;
+        }
+        
+        animateUpdate() {
+            const elements = ['siteBandwidth', 'sitePackets', 'siteEfficiency'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('pulse-animation');
+                setTimeout(() => el.classList.remove('pulse-animation'), 300);
+            });
+        }
+        
+        logActivity(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = { time: timestamp, message, type };
+            this.activityLog.push(logEntry);
+            
+            // Mantém apenas últimos 50 logs
+            if (this.activityLog.length > 50) {
+                this.activityLog.shift();
+            }
+            
+            this.updateLogDisplay();
+        }
+        
+        updateLogDisplay() {
+            const logContainer = document.getElementById('activityLog');
+            logContainer.innerHTML = '';
+            
+            this.activityLog.slice().reverse().forEach(log => {
+                const logElement = document.createElement('div');
+                logElement.className = `mb-1 p-2 rounded text-sm ${
+                    log.type === 'error' ? 'bg-red-900/30 text-red-300' :
+                    log.type === 'success' ? 'bg-green-900/30 text-green-300' :
+                    log.type === 'warning' ? 'bg-yellow-900/30 text-yellow-300' :
+                    'bg-gray-800 text-gray-400'
+                }`;
+                logElement.innerHTML = `<span class="text-gray-500">[${log.time}]</span> ${log.message}`;
+                logContainer.appendChild(logElement);
+            });
+        }
+    }
+    
+    // Instancia global
+    let siteMonitor = null;
+    
+    // Funções globais para os botões
+    function startSiteMonitoring() {
+        const url = document.getElementById('siteUrl').value.trim();
+        const domain = extractDomain(url) || '';
+        
+        if (!siteMonitor) {
+            siteMonitor = new SiteMonitor();
+            setTimeout(() => siteMonitor.startMonitoring(domain), 1000);
+        } else {
+            siteMonitor.startMonitoring(domain);
+        }
+    }
+    
+    function stopSiteMonitoring() {
+        if (siteMonitor) {
+            siteMonitor.stopMonitoring();
+        }
+    }
+    
+    function monitorSite(url) {
+        document.getElementById('siteUrl').value = url;
+        startSiteMonitoring();
+    }
+    
+    function testConnection() {
+        if (siteMonitor && siteMonitor.ws && siteMonitor.ws.readyState === WebSocket.OPEN) {
+            alert('✅ Conexão WebSocket ativa!');
+            siteMonitor.logActivity('✅ Teste de conexão bem-sucedido', 'success');
+        } else {
+            alert('❌ Conexão WebSocket não está ativa. Verifique o servidor.');
+            siteMonitor.logActivity('❌ Teste de conexão falhou', 'error');
+        }
+    }
+    
+    function extractDomain(url) {
+        if (!url) return '';
+        try {
+            // Adiciona protocolo se não tiver
+            if (!url.startsWith('http')) {
+                url = 'https://' + url;
+            }
+            const urlObj = new URL(url);
+            return urlObj.hostname;
+        } catch {
+            return url; // Retorna como está se falhar
+        }
+    }
+    
+    // Inicializa quando a página carrega
+    document.addEventListener('DOMContentLoaded', () => {
+        siteMonitor = new SiteMonitor();
+        
+        // Atualiza intervalo quando mudar
+        document.getElementById('updateInterval').addEventListener('change', function() {
+            if (siteMonitor) {
+                siteMonitor.updateInterval = parseInt(this.value);
+                siteMonitor.logActivity(`⏱️ Intervalo atualizado: ${this.value}ms`, 'info');
+            }
+        });
+        
+        // Atualiza servidor quando mudar
+        document.getElementById('wsServer').addEventListener('change', function() {
+            if (siteMonitor) {
+                siteMonitor.logActivity(`🔄 Alterando servidor para: ${this.value}`, 'info');
+                siteMonitor.stopMonitoring();
+                setTimeout(() => {
+                    siteMonitor.connect();
+                }, 1000);
+            }
+        });
+        
+        // Enter para iniciar monitoramento
+        document.getElementById('siteUrl').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startSiteMonitoring();
+        });
+        
+        // Carrega exemplos
+        siteMonitor.logActivity('🚀 Sistema de monitoramento inicializado', 'success');
+        siteMonitor.logActivity('💡 Dica: Clique em um site sugerido para começar', 'info');
+    });
+    </script>
+</body>
+</html>
